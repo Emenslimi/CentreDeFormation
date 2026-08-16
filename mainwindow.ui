@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1100</width>
+    <height>700</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Gestion du Centre de Formation</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_main">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_formateurs">
+       <attribute name="title">
+        <string>Gestion des Formateurs</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout_formateurs">
+        <item>
+         <widget class="QGroupBox" name="groupBox_formateur_form">
+          <property name="title">
+           <string>Informations Formateur</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_formateur">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_id">
+             <property name="text">
+              <string>ID :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEdit_id"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_nom">
+             <property name="text">
+              <string>Nom :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="lineEdit_nom"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_prenom">
+             <property name="text">
+              <string>Prénom :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="lineEdit_prenom"/>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_spec">
+             <property name="text">
+              <string>Spécialité :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="combo_spec">
+             <item>
+              <property name="text">
+               <string>Informatique</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Réseaux</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Cybersécurité</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Management</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_email">
+             <property name="text">
+              <string>Email :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="lineEdit_email"/>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_phone">
+             <property name="text">
+              <string>Téléphone :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLineEdit" name="lineEdit_phone"/>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_tarif">
+             <property name="text">
+              <string>Tarif Horaire (DT) :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLineEdit" name="lineEdit_tarif"/>
+           </item>
+           <item row="7" column="0" colspan="2">
+            <widget class="QPushButton" name="btn_ajouter_formateur">
+             <property name="text">
+              <string>Ajouter Formateur</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0" colspan="2">
+            <widget class="QPushButton" name="btn_modifier_formateur">
+             <property name="text">
+              <string>Modifier Formateur</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0" colspan="2">
+            <widget class="Line" name="line_1">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="0">
+            <widget class="QLabel" name="label_id_suppr">
+             <property name="text">
+              <string>ID à supprimer :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="1">
+            <widget class="QLineEdit" name="lineEdit_id_suppr"/>
+           </item>
+           <item row="11" column="0" colspan="2">
+            <widget class="QPushButton" name="btn_supprimer_formateur">
+             <property name="text">
+              <string>Supprimer Formateur</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_affichage_formateur">
+          <item>
+           <widget class="QGroupBox" name="groupBox_recherche_tri">
+            <property name="title">
+             <string>Recherche et Tri</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_search">
+             <item>
+              <widget class="QComboBox" name="combo_recherche_critere">
+               <item>
+                <property name="text">
+                 <string>Nom</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Spécialité</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="lineEdit_recherche_valeur">
+               <property name="placeholderText">
+                <string>Valeur recherchée...</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="combo_tri_critere">
+               <item>
+                <property name="text">
+                 <string>ID</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Nom</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Tarif</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="combo_ordre">
+               <item>
+                <property name="text">
+                 <string>ASC</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>DESC</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_rechercher_formateur">
+               <property name="text">
+                <string>Filtrer / Trier</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableView" name="tableView_formateur"/>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_metier">
+            <item>
+             <widget class="QPushButton" name="btn_stat_formateur">
+              <property name="text">
+               <string>Afficher Statistiques (Graphique)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_pdf_formateur">
+              <property name="text">
+               <string>Exporter en PDF</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_cours">
+       <attribute name="title">
+        <string>Gestion des Cours</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout_cours">
+        <item>
+         <widget class="QGroupBox" name="groupBox_cours_form">
+          <property name="title">
+           <string>Actions Cours</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_cours_actions">
+           <item>
+            <widget class="QPushButton" name="btn_ajouter_cours">
+             <property name="text">
+              <string>Ajouter Cours</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btn_supprimer_cours">
+             <property name="text">
+              <string>Supprimer Cours</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_cours">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableView" name="tableView_cours"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1100</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
