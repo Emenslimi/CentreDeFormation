@@ -12,13 +12,9 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 
-//QT_CHARTS_USE_NAMESPACE
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-
-    // Charger les données dans les tables dès l'ouverture
     rafraichirTables();
 }
 
@@ -31,9 +27,7 @@ void MainWindow::rafraichirTables() {
     ui->tableView_cours->setModel(coursTmp.afficher());
 }
 
-// ============================================================================
-// ---------------------- CONTROLES DE SAISIE ---------------------------------
-// ============================================================================
+// ---------------- CONTROLES DE SAISIE ----------------
 
 bool MainWindow::validerControlesSaisieFormateur() {
     if (ui->lineEdit_id->text().isEmpty() || ui->lineEdit_nom->text().isEmpty() ||
@@ -42,16 +36,14 @@ bool MainWindow::validerControlesSaisieFormateur() {
         return false;
     }
 
-    // Contrôle format Email
     QRegularExpression emailRegex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     if (!emailRegex.match(ui->lineEdit_email->text()).hasMatch()) {
         QMessageBox::warning(this, "Erreur de saisie", "Format d'adresse email invalide.");
         return false;
     }
 
-    // Contrôle téléphone (8 chiffres minimum)
     if (ui->lineEdit_phone->text().length() < 8) {
-        QMessageBox::warning(this, "Erreur de saisie", "Numéro de téléphone invalide (au moins 8 chiffres).");
+        QMessageBox::warning(this, "Erreur de saisie", "Numéro de téléphone invalide.");
         return false;
     }
 
@@ -66,7 +58,6 @@ bool MainWindow::validerControlesSaisieCours() {
         return false;
     }
 
-    // Validation durée et prix strictement positifs
     bool okDuree, okPrix;
     int duree = ui->lineEdit_cours_duree->text().toInt(&okDuree);
     double prix = ui->lineEdit_cours_prix->text().toDouble(&okPrix);
@@ -84,9 +75,7 @@ bool MainWindow::validerControlesSaisieCours() {
     return true;
 }
 
-// ============================================================================
-// -------------------------- SLOTS FORMATEUR ---------------------------------
-// ============================================================================
+// ---------------- SLOTS FORMATEUR ----------------
 
 void MainWindow::on_btn_ajouter_formateur_clicked() {
     if (!validerControlesSaisieFormateur()) return;
@@ -105,7 +94,7 @@ void MainWindow::on_btn_ajouter_formateur_clicked() {
         QMessageBox::information(this, "Succès", "Formateur ajouté avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout (Vérifiez l'unicité de l'ID).");
+        QMessageBox::critical(this, "Erreur", "Échec de l'ajout (Vérifiez l'ID unique).");
     }
 }
 
@@ -141,7 +130,7 @@ void MainWindow::on_btn_supprimer_formateur_clicked() {
         QMessageBox::information(this, "Succès", "Formateur supprimé avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Impossible de supprimer cet identifiant (ID introuvable).");
+        QMessageBox::critical(this, "Erreur", "Impossible de supprimer cet identifiant.");
     }
 }
 
@@ -154,7 +143,6 @@ void MainWindow::on_btn_rechercher_formateur_clicked() {
     ui->tableView_formateur->setModel(formateurTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
 }
 
-// Métier Statistique : Graphique camembert (QtCharts)
 void MainWindow::on_btn_stat_formateur_clicked() {
     QMap<QString, int> stats = formateurTmp.obtenirStatistiquesSpecialite();
 
@@ -174,7 +162,6 @@ void MainWindow::on_btn_stat_formateur_clicked() {
     chartView->show();
 }
 
-// Métier Export PDF
 void MainWindow::on_btn_pdf_formateur_clicked() {
     QString fileName = QFileDialog::getSaveFileName(this, "Exporter en PDF", "", "*.pdf");
     if (fileName.isEmpty()) return;
@@ -207,9 +194,7 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     QMessageBox::information(this, "PDF", "Document PDF généré avec succès !");
 }
 
-// ============================================================================
-// ----------------------------- SLOTS COURS ----------------------------------
-// ============================================================================
+// ---------------- SLOTS COURS ----------------
 
 void MainWindow::on_btn_ajouter_cours_clicked() {
     if (!validerControlesSaisieCours()) return;
@@ -227,7 +212,7 @@ void MainWindow::on_btn_ajouter_cours_clicked() {
         QMessageBox::information(this, "Succès", "Cours ajouté avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout du cours (Vérifiez l'ID unique et l'existence du Formateur).");
+        QMessageBox::critical(this, "Erreur", "Échec de l'ajout du cours.");
     }
 }
 
@@ -262,7 +247,7 @@ void MainWindow::on_btn_supprimer_cours_clicked() {
         QMessageBox::information(this, "Succès", "Cours supprimé avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Impossible de supprimer ce cours (ID introuvable).");
+        QMessageBox::critical(this, "Erreur", "Impossible de supprimer ce cours.");
     }
 }
 
@@ -273,4 +258,57 @@ void MainWindow::on_btn_rechercher_cours_clicked() {
     QString ordre = ui->combo_cours_ordre->currentText();
 
     ui->tableView_cours->setModel(coursTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
+}
+
+// Métier Cours 1 : Graphique statistique par catégorie
+void MainWindow::on_btn_stat_cours_clicked() {
+    QMap<QString, int> stats = coursTmp.obtenirStatistiquesCategorie();
+
+    QPieSeries *series = new QPieSeries();
+    for (auto it = stats.begin(); it != stats.end(); ++it) {
+        series->append(it.key() + " (" + QString::number(it.value()) + ")", it.value());
+    }
+
+    QChart *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Répartition des Cours par Catégorie");
+    chart->setAnimationOptions(QChart::AllAnimations);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->resize(600, 400);
+    chartView->show();
+}
+
+// Métier Cours 2 : Exportation PDF de la liste des cours
+void MainWindow::on_btn_pdf_cours_clicked() {
+    QString fileName = QFileDialog::getSaveFileName(this, "Exporter Cours en PDF", "", "*.pdf");
+    if (fileName.isEmpty()) return;
+
+    QPrinter printer(QPrinter::PrinterResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+
+    QPainter painter(&printer);
+    painter.setFont(QFont("Helvetica", 12));
+
+    painter.drawText(100, 100, "===============================================");
+    painter.drawText(100, 130, "           CATALOGUE DES COURS             ");
+    painter.drawText(100, 160, "===============================================");
+
+    QSqlQueryModel *model = coursTmp.afficher();
+    int y = 220;
+
+    for (int i = 0; i < model->rowCount(); ++i) {
+        QString ligne = QString::number(model->data(model->index(i, 0)).toInt()) + " | " +
+                        model->data(model->index(i, 1)).toString() + " | Cat : " +
+                        model->data(model->index(i, 2)).toString() + " | Durée : " +
+                        model->data(model->index(i, 3)).toString() + "h | Prix : " +
+                        model->data(model->index(i, 4)).toString() + " DT";
+        painter.drawText(100, y, ligne);
+        y += 30;
+    }
+
+    painter.end();
+    QMessageBox::information(this, "PDF", "Catalogue des cours exporté en PDF avec succès !");
 }

@@ -85,3 +85,12 @@ QMap<QString, double> Cours::obtenirPrixMoyenParCategorie() {
     }
     return stats;
 }
+
+QMap<QString, int> Cours::obtenirStatistiquesCategorie() {
+    QMap<QString, int> stats;
+    QSqlQuery query("SELECT CATEGORIE, COUNT(*) FROM COURS GROUP BY CATEGORIE");
+    while (query.next()) {
+        stats[query.value(0).toString()] = query.value(1).toInt();
+    }
+    return stats;
+}

@@ -473,6 +473,24 @@
           <item>
            <widget class="QTableView" name="tableView_cours"/>
           </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_cours_metier">
+            <item>
+             <widget class="QPushButton" name="btn_stat_cours">
+              <property name="text">
+               <string>Afficher Statistiques Cours (Graphique)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_pdf_cours">
+              <property name="text">
+               <string>Exporter Cours en PDF</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </item>
        </layout>

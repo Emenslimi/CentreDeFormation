@@ -8,7 +8,6 @@
 #include <QPrinter>
 #include <QPainter>
 
-// Inclusion des modules QtCharts
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>
@@ -41,13 +40,14 @@ private slots:
     void on_btn_modifier_cours_clicked();
     void on_btn_supprimer_cours_clicked();
     void on_btn_rechercher_cours_clicked();
+    void on_btn_stat_cours_clicked();
+    void on_btn_pdf_cours_clicked();
 
 private:
     Ui::MainWindow *ui;
     Formateur formateurTmp;
     Cours coursTmp;
 
-    // Méthodes utilitaires
     void rafraichirTables();
     bool validerControlesSaisieFormateur();
     bool validerControlesSaisieCours();

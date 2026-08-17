@@ -27,6 +27,7 @@ public:
     // Métiers
     QSqlQueryModel* rechercherEtTrier(QString champRecherche, QString valeur, QString champTri, QString ordre);
     QMap<QString, double> obtenirPrixMoyenParCategorie();
+    QMap<QString, int> obtenirStatistiquesCategorie();
     bool exporterPDF(QString filePath);
 };
 
