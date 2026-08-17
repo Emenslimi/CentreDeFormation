@@ -1,5 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "formateur.h"
+#include "cours.h"
+
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QFileDialog>
+#include <QPrinter>
+#include <QPainter>
+#include <QtCharts/QPieSeries>
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+
+//QT_CHARTS_USE_NAMESPACE
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -18,11 +31,14 @@ void MainWindow::rafraichirTables() {
     ui->tableView_cours->setModel(coursTmp.afficher());
 }
 
-// ---------------- CONTROLE DE SAISIE ----------------
+// ============================================================================
+// ---------------------- CONTROLES DE SAISIE ---------------------------------
+// ============================================================================
+
 bool MainWindow::validerControlesSaisieFormateur() {
     if (ui->lineEdit_id->text().isEmpty() || ui->lineEdit_nom->text().isEmpty() ||
         ui->lineEdit_email->text().isEmpty() || ui->lineEdit_phone->text().isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez remplir tous les champs obligatoires.");
+        QMessageBox::warning(this, "Avertissement", "Veuillez remplir tous les champs obligatoires du formateur.");
         return false;
     }
 
@@ -33,16 +49,45 @@ bool MainWindow::validerControlesSaisieFormateur() {
         return false;
     }
 
-    // Contrôle téléphone (8 chiffres min)
+    // Contrôle téléphone (8 chiffres minimum)
     if (ui->lineEdit_phone->text().length() < 8) {
-        QMessageBox::warning(this, "Erreur de saisie", "Numéro de téléphone invalide.");
+        QMessageBox::warning(this, "Erreur de saisie", "Numéro de téléphone invalide (au moins 8 chiffres).");
         return false;
     }
 
     return true;
 }
 
-// ---------------- SLOTS FORMATEUR ----------------
+bool MainWindow::validerControlesSaisieCours() {
+    if (ui->lineEdit_cours_id->text().isEmpty() || ui->lineEdit_cours_titre->text().isEmpty() ||
+        ui->lineEdit_cours_duree->text().isEmpty() || ui->lineEdit_cours_prix->text().isEmpty() ||
+        ui->lineEdit_cours_id_formateur->text().isEmpty()) {
+        QMessageBox::warning(this, "Avertissement", "Veuillez remplir tous les champs du cours.");
+        return false;
+    }
+
+    // Validation durée et prix strictement positifs
+    bool okDuree, okPrix;
+    int duree = ui->lineEdit_cours_duree->text().toInt(&okDuree);
+    double prix = ui->lineEdit_cours_prix->text().toDouble(&okPrix);
+
+    if (!okDuree || duree <= 0) {
+        QMessageBox::warning(this, "Erreur de saisie", "La durée doit être un nombre entier positif.");
+        return false;
+    }
+
+    if (!okPrix || prix <= 0) {
+        QMessageBox::warning(this, "Erreur de saisie", "Le prix doit être un nombre positif.");
+        return false;
+    }
+
+    return true;
+}
+
+// ============================================================================
+// -------------------------- SLOTS FORMATEUR ---------------------------------
+// ============================================================================
+
 void MainWindow::on_btn_ajouter_formateur_clicked() {
     if (!validerControlesSaisieFormateur()) return;
 
@@ -58,19 +103,45 @@ void MainWindow::on_btn_ajouter_formateur_clicked() {
 
     if (f.ajouter()) {
         QMessageBox::information(this, "Succès", "Formateur ajouté avec succès !");
-        rafraichirTables(); // Mise à jour automatique
+        rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout (Vérifiez les contraintes/ID unique).");
+        QMessageBox::critical(this, "Erreur", "Échec de l'ajout (Vérifiez l'unicité de l'ID).");
+    }
+}
+
+void MainWindow::on_btn_modifier_formateur_clicked() {
+    if (!validerControlesSaisieFormateur()) return;
+
+    int id = ui->lineEdit_id->text().toInt();
+    QString nom = ui->lineEdit_nom->text();
+    QString prenom = ui->lineEdit_prenom->text();
+    QString spec = ui->combo_spec->currentText();
+    QString email = ui->lineEdit_email->text();
+    QString phone = ui->lineEdit_phone->text();
+    double tarif = ui->lineEdit_tarif->text().toDouble();
+
+    Formateur f(id, nom, prenom, spec, email, phone, tarif);
+
+    if (f.modifier(id)) {
+        QMessageBox::information(this, "Succès", "Formateur modifié avec succès !");
+        rafraichirTables();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Échec de la modification.");
     }
 }
 
 void MainWindow::on_btn_supprimer_formateur_clicked() {
+    if (ui->lineEdit_id_suppr->text().isEmpty()) {
+        QMessageBox::warning(this, "Avertissement", "Veuillez saisir l'ID du formateur à supprimer.");
+        return;
+    }
+
     int id = ui->lineEdit_id_suppr->text().toInt();
     if (formateurTmp.supprimer(id)) {
-        QMessageBox::information(this, "Succès", "Formateur supprimé.");
+        QMessageBox::information(this, "Succès", "Formateur supprimé avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Impossible de supprimer cet identifiant.");
+        QMessageBox::critical(this, "Erreur", "Impossible de supprimer cet identifiant (ID introuvable).");
     }
 }
 
@@ -83,7 +154,7 @@ void MainWindow::on_btn_rechercher_formateur_clicked() {
     ui->tableView_formateur->setModel(formateurTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
 }
 
-// Métier 2 : Génération de Graphique Statistique (QtCharts)
+// Métier Statistique : Graphique camembert (QtCharts)
 void MainWindow::on_btn_stat_formateur_clicked() {
     QMap<QString, int> stats = formateurTmp.obtenirStatistiquesSpecialite();
 
@@ -103,7 +174,7 @@ void MainWindow::on_btn_stat_formateur_clicked() {
     chartView->show();
 }
 
-// Métier 3 : Génération de document PDF Personnalisé
+// Métier Export PDF
 void MainWindow::on_btn_pdf_formateur_clicked() {
     QString fileName = QFileDialog::getSaveFileName(this, "Exporter en PDF", "", "*.pdf");
     if (fileName.isEmpty()) return;
@@ -116,7 +187,7 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     painter.setFont(QFont("Helvetica", 12));
 
     painter.drawText(100, 100, "===============================================");
-    painter.drawText(100, 130, "        FICHE DES FORMATEURS REGISTRES        ");
+    painter.drawText(100, 130, "         FICHE DES FORMATEURS REGISTRES        ");
     painter.drawText(100, 160, "===============================================");
 
     QSqlQueryModel *model = formateurTmp.afficher();
@@ -136,35 +207,70 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     QMessageBox::information(this, "PDF", "Document PDF généré avec succès !");
 }
 
-// ---------------- AUTRES SLOTS FORMATEUR ----------------
-void MainWindow::on_btn_modifier_formateur_clicked() {
-    if (!validerControlesSaisieFormateur()) return;
+// ============================================================================
+// ----------------------------- SLOTS COURS ----------------------------------
+// ============================================================================
 
-    int id = ui->lineEdit_id->text().toInt();
-    QString nom = ui->lineEdit_nom->text();
-    QString prenom = ui->lineEdit_prenom->text();
-    QString spec = ui->combo_spec->currentText();
-    QString email = ui->lineEdit_email->text();
-    QString phone = ui->lineEdit_phone->text();
-    double tarif = ui->lineEdit_tarif->text().toDouble();
+void MainWindow::on_btn_ajouter_cours_clicked() {
+    if (!validerControlesSaisieCours()) return;
 
-    Formateur f(id, nom, prenom, spec, email, phone, tarif);
+    int id = ui->lineEdit_cours_id->text().toInt();
+    QString titre = ui->lineEdit_cours_titre->text();
+    QString categorie = ui->combo_cours_cat->currentText();
+    int duree = ui->lineEdit_cours_duree->text().toInt();
+    double prix = ui->lineEdit_cours_prix->text().toDouble();
+    int idFormateur = ui->lineEdit_cours_id_formateur->text().toInt();
 
-    if (f.modifier(id)) { // <-- Ajout du paramètre id ici
-        QMessageBox::information(this, "Succès", "Formateur modifié avec succès !");
+    Cours c(id, titre, categorie, duree, prix, idFormateur);
+
+    if (c.ajouter()) {
+        QMessageBox::information(this, "Succès", "Cours ajouté avec succès !");
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification.");
+        QMessageBox::critical(this, "Erreur", "Échec de l'ajout du cours (Vérifiez l'ID unique et l'existence du Formateur).");
     }
 }
 
-// ---------------- SLOTS COURS ----------------
-void MainWindow::on_btn_ajouter_cours_clicked() {
-    // Insérez ici votre logique d'ajout de cours
-    QMessageBox::information(this, "Cours", "Action Ajouter Cours déclenchée.");
+void MainWindow::on_btn_modifier_cours_clicked() {
+    if (!validerControlesSaisieCours()) return;
+
+    int id = ui->lineEdit_cours_id->text().toInt();
+    QString titre = ui->lineEdit_cours_titre->text();
+    QString categorie = ui->combo_cours_cat->currentText();
+    int duree = ui->lineEdit_cours_duree->text().toInt();
+    double prix = ui->lineEdit_cours_prix->text().toDouble();
+    int idFormateur = ui->lineEdit_cours_id_formateur->text().toInt();
+
+    Cours c(id, titre, categorie, duree, prix, idFormateur);
+
+    if (c.modifier(id)) {
+        QMessageBox::information(this, "Succès", "Cours modifié avec succès !");
+        rafraichirTables();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Échec de la modification du cours.");
+    }
 }
 
 void MainWindow::on_btn_supprimer_cours_clicked() {
-    // Insérez ici votre logique de suppression de cours
-    QMessageBox::information(this, "Cours", "Action Supprimer Cours déclenchée.");
+    if (ui->lineEdit_cours_id_suppr->text().isEmpty()) {
+        QMessageBox::warning(this, "Avertissement", "Veuillez saisir l'ID du cours à supprimer.");
+        return;
+    }
+
+    int id = ui->lineEdit_cours_id_suppr->text().toInt();
+    if (coursTmp.supprimer(id)) {
+        QMessageBox::information(this, "Succès", "Cours supprimé avec succès !");
+        rafraichirTables();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Impossible de supprimer ce cours (ID introuvable).");
+    }
+}
+
+void MainWindow::on_btn_rechercher_cours_clicked() {
+    QString critereRec = ui->combo_cours_recherche_critere->currentText();
+    QString valeur = ui->lineEdit_cours_recherche_valeur->text();
+    QString critereTri = ui->combo_cours_tri_critere->currentText();
+    QString ordre = ui->combo_cours_ordre->currentText();
+
+    ui->tableView_cours->setModel(coursTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
 }

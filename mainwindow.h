@@ -4,12 +4,15 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QRegularExpression>
+#include <QFileDialog>
+#include <QPrinter>
+#include <QPainter>
+
+// Inclusion des modules QtCharts
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>
-#include <QPrinter>
-#include <QPainter>
-#include <QFileDialog>
+
 #include "formateur.h"
 #include "cours.h"
 
@@ -21,7 +24,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -35,15 +38,19 @@ private slots:
 
     // Slots Cours
     void on_btn_ajouter_cours_clicked();
+    void on_btn_modifier_cours_clicked();
     void on_btn_supprimer_cours_clicked();
+    void on_btn_rechercher_cours_clicked();
 
 private:
     Ui::MainWindow *ui;
     Formateur formateurTmp;
     Cours coursTmp;
 
+    // Méthodes utilitaires
     void rafraichirTables();
     bool validerControlesSaisieFormateur();
+    bool validerControlesSaisieCours();
 };
 
 #endif // MAINWINDOW_H
