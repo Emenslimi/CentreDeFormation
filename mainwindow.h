@@ -34,6 +34,7 @@ private slots:
     void on_btn_rechercher_formateur_clicked();
     void on_btn_stat_formateur_clicked();
     void on_btn_pdf_formateur_clicked();
+    void on_btn_calculer_paie_clicked();
 
     // Slots Cours
     void on_btn_ajouter_cours_clicked();

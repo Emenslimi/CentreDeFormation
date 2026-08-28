@@ -4,6 +4,7 @@
 #include "cours.h"
 
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QRegularExpression>
 #include <QFileDialog>
 #include <QPrinter>
@@ -80,11 +81,18 @@ bool MainWindow::validerControlesSaisieCours() {
 void MainWindow::on_btn_ajouter_formateur_clicked() {
     if (!validerControlesSaisieFormateur()) return;
 
+    QString email = ui->lineEdit_email->text();
+
+    // UTILISATION DU MÉTIER 5 : Vérification de l'unicité de l'email
+    if (!formateurTmp.verifierEmailUnique(email)) {
+        QMessageBox::warning(this, "Avertissement", "Cette adresse email est déjà utilisée par un autre formateur !");
+        return;
+    }
+
     int id = ui->lineEdit_id->text().toInt();
     QString nom = ui->lineEdit_nom->text();
     QString prenom = ui->lineEdit_prenom->text();
     QString spec = ui->combo_spec->currentText();
-    QString email = ui->lineEdit_email->text();
     QString phone = ui->lineEdit_phone->text();
     double tarif = ui->lineEdit_tarif->text().toDouble();
 
@@ -141,6 +149,45 @@ void MainWindow::on_btn_rechercher_formateur_clicked() {
     QString ordre = ui->combo_ordre->currentText();
 
     ui->tableView_formateur->setModel(formateurTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
+}
+
+// UTILISATION DU MÉTIER 4 : Calcul de la paie estimée
+void MainWindow::on_btn_calculer_paie_clicked() {
+    int id = -1;
+
+    // 1. Si l'ID est saisi dans le lineEdit_id
+    if (!ui->lineEdit_id->text().isEmpty()) {
+        id = ui->lineEdit_id->text().toInt();
+    }
+    // 2. Sinon, on vérifie si une ligne est sélectionnée dans le tableView
+    else if (ui->tableView_formateur->currentIndex().isValid()) {
+        int row = ui->tableView_formateur->currentIndex().row();
+        id = ui->tableView_formateur->model()->data(ui->tableView_formateur->model()->index(row, 0)).toInt();
+    }
+    // 3. Si aucun des deux n'est disponible
+    else {
+        QMessageBox::warning(this, "Sélection requise", "Veuillez d'abord saisir un ID ou sélectionner une ligne dans le tableau.");
+        return;
+    }
+
+    bool ok;
+    int heures = QInputDialog::getInt(this, "Calcul de Paie",
+                                      "Entrez le nombre d'heures effectuées ce mois-ci :",
+                                      160, 1, 300, 1, &ok);
+
+    if (ok) {
+        double paieTotale = formateurTmp.calculerPaieEstimee(id, heures);
+
+        if (paieTotale > 0) {
+            QMessageBox::information(this, "Fiche de Paie Estimée",
+                                     QString("<b>Formateur ID :</b> %1<br>"
+                                             "<b>Heures travaillées :</b> %2 h<br>"
+                                             "<b>Montant Total à payer :</b> <font color='green'><b>%3 DT</b></font>")
+                                         .arg(id).arg(heures).arg(paieTotale));
+        } else {
+            QMessageBox::critical(this, "Erreur", "Impossible de calculer la paie (Formateur introuvable ou tarif non défini).");
+        }
+    }
 }
 
 void MainWindow::on_btn_stat_formateur_clicked() {
@@ -260,7 +307,6 @@ void MainWindow::on_btn_rechercher_cours_clicked() {
     ui->tableView_cours->setModel(coursTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
 }
 
-// Métier Cours 1 : Graphique statistique par catégorie
 void MainWindow::on_btn_stat_cours_clicked() {
     QMap<QString, int> stats = coursTmp.obtenirStatistiquesCategorie();
 
@@ -280,7 +326,6 @@ void MainWindow::on_btn_stat_cours_clicked() {
     chartView->show();
 }
 
-// Métier Cours 2 : Exportation PDF de la liste des cours
 void MainWindow::on_btn_pdf_cours_clicked() {
     QString fileName = QFileDialog::getSaveFileName(this, "Exporter Cours en PDF", "", "*.pdf");
     if (fileName.isEmpty()) return;
@@ -293,7 +338,7 @@ void MainWindow::on_btn_pdf_cours_clicked() {
     painter.setFont(QFont("Helvetica", 12));
 
     painter.drawText(100, 100, "===============================================");
-    painter.drawText(100, 130, "           CATALOGUE DES COURS             ");
+    painter.drawText(100, 130, "            CATALOGUE DES COURS                ");
     painter.drawText(100, 160, "===============================================");
 
     QSqlQueryModel *model = coursTmp.afficher();
