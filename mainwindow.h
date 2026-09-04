@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QPrinter>
 #include <QPainter>
+#include <QTranslator>
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
@@ -27,7 +28,9 @@ public:
     ~MainWindow();
 
 private slots:
+    // Theme & Multi-Langue
     void on_btn_toggle_theme_clicked();
+    void on_combo_langue_currentIndexChanged(int index);
 
     // Slots Formateurs
     void on_btn_ajouter_formateur_clicked();
@@ -54,12 +57,19 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    // Objets métier temporaires pour exécuter les requêtes
     Formateur formateurTmp;
     Cours coursTmp;
 
+    // Traducteur pour le support multilingue
+    QTranslator m_translator;
+
+    // Méthodes utilitaires
     void rafraichirTables();
     bool validerControlesSaisieFormateur();
     bool validerControlesSaisieCours();
+    void appliquerLangue(const QString &codeLangue);
 };
 
 #endif // MAINWINDOW_H

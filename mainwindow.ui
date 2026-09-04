@@ -16,11 +16,49 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_main">
     <item>
-     <widget class="QPushButton" name="btn_toggle_theme">
-      <property name="text">
-       <string>🌙 Mode Sombre</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_top_bar">
+      <item>
+       <widget class="QPushButton" name="btn_toggle_theme">
+        <property name="text">
+         <string>🌙 Mode Sombre</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_top">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_langue">
+        <property name="text">
+         <string>Langue :</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combo_langue">
+        <item>
+         <property name="text">
+          <string>Français</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>English</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QTabWidget" name="tabWidget">

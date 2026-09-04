@@ -10,8 +10,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Chargement des modules Qt6 indispensables (Inclusion de Network pour QR Code & Mail)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Sql Charts PrintSupport Network)
+# Chargement des modules Qt6 indispensables (LinguistTools ajouté pour la traduction)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Sql Charts PrintSupport Network LinguistTools)
+
+# Liste des fichiers de traduction (.ts)
+set(TS_FILES
+    app_en.ts
+)
 
 # Liste de tous vos fichiers C++ et de l'interface graphique .ui
 set(PROJECT_SOURCES
@@ -29,6 +34,9 @@ set(PROJECT_SOURCES
 
 # Création de l'exécutable
 qt_add_executable(appCentreDeFormation ${PROJECT_SOURCES})
+
+# Traitement automatique des fichiers .ts -> compilation en .qm et inclusion dans l'exécutable
+qt_add_translations(appCentreDeFormation TS_FILES ${TS_FILES})
 
 # Liaison des bibliothèques Qt nécessaires à votre application
 target_link_libraries(appCentreDeFormation PRIVATE

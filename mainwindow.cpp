@@ -3,12 +3,14 @@
 #include "formateur.h"
 #include "cours.h"
 
+#include <QApplication>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QRegularExpression>
 #include <QFileDialog>
 #include <QPrinter>
 #include <QPainter>
+#include <QDebug>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
@@ -26,7 +28,16 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+
+    // Initialisation des éléments de l'interface
     rafraichirTables();
+
+    // Remplissage optionnel du ComboBox de langue (s'il n'est pas déjà configuré dans Qt Designer)
+    if (ui->combo_langue->count() == 0) {
+        ui->combo_langue->addItem("🇫🇷 Français");
+        ui->combo_langue->addItem("🇬🇧 English");
+        ui->combo_langue->addItem("🇹🇳 العربية");
+    }
 }
 
 MainWindow::~MainWindow() {
@@ -38,23 +49,89 @@ void MainWindow::rafraichirTables() {
     ui->tableView_cours->setModel(coursTmp.afficher());
 }
 
+// ---------------- MULTI-LANGUE ET TRADUCTION ----------------
+
+void MainWindow::appliquerLangue(const QString &codeLangue) {
+    // 1. Supprimer l'ancien traducteur s'il existe
+    qApp->removeTranslator(&m_translator);
+
+    // Ajuster le sens de lecture si la langue choisie est l'Arabe
+    if (codeLangue == "ar") {
+        qApp->setLayoutDirection(Qt::RightToLeft);
+    } else {
+        qApp->setLayoutDirection(Qt::LeftToRight);
+    }
+
+    // Si la langue choisie est le français (langue source/par défaut), on rafraîchit l'UI sans traducteur
+    if (codeLangue == "fr") {
+        ui->retranslateUi(this);
+        return;
+    }
+
+    // 2. Tenter de charger le fichier .qm depuis les ressources générées par CMake (qt_add_translations -> :/i18n/)
+    QString cheminQM = QString(":/i18n/app_%1.qm").arg(codeLangue);
+
+    if (m_translator.load(cheminQM)) {
+        // 3. Installer le traducteur dans l'application
+        qApp->installTranslator(&m_translator);
+
+        // 4. Réappliquer les textes traduits sur tous les widgets de l'interface
+        ui->retranslateUi(this);
+
+        qDebug() << "Traduction chargée avec succès depuis :" << cheminQM;
+    } else {
+        qDebug() << "ERREUR : Impossible de charger le fichier de traduction à l'emplacement :" << cheminQM;
+
+        // Tentative de secours 1 : Recherche sans le préfixe /i18n/
+        QString cheminSecours1 = QString(":/translations/app_%1.qm").arg(codeLangue);
+        if (m_translator.load(cheminSecours1)) {
+            qApp->installTranslator(&m_translator);
+            ui->retranslateUi(this);
+            qDebug() << "Traduction chargée avec succès depuis le répertoire de ressources de secours.";
+            return;
+        }
+
+        // Tentative de secours 2 : chercher le .qm dans le répertoire de l'exécutable
+        QString cheminSecours2 = QString("app_%1.qm").arg(codeLangue);
+        if (m_translator.load(cheminSecours2, QApplication::applicationDirPath())) {
+            qApp->installTranslator(&m_translator);
+            ui->retranslateUi(this);
+            qDebug() << "Traduction chargée avec succès depuis le répertoire de l'application.";
+        }
+    }
+}
+
+void MainWindow::on_combo_langue_currentIndexChanged(int index) {
+    switch (index) {
+    case 0:
+        appliquerLangue("fr");
+        break;
+    case 1:
+        appliquerLangue("en");
+        break;
+    case 2:
+        appliquerLangue("ar");
+        break;
+    }
+}
+
 // ---------------- CONTROLES DE SAISIE ----------------
 
 bool MainWindow::validerControlesSaisieFormateur() {
     if (ui->lineEdit_id->text().isEmpty() || ui->lineEdit_nom->text().isEmpty() ||
         ui->lineEdit_email->text().isEmpty() || ui->lineEdit_phone->text().isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez remplir tous les champs obligatoires du formateur.");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Veuillez remplir tous les champs obligatoires du formateur."));
         return false;
     }
 
     QRegularExpression emailRegex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     if (!emailRegex.match(ui->lineEdit_email->text()).hasMatch()) {
-        QMessageBox::warning(this, "Erreur de saisie", "Format d'adresse email invalide.");
+        QMessageBox::warning(this, tr("Erreur de saisie"), tr("Format d'adresse email invalide."));
         return false;
     }
 
     if (ui->lineEdit_phone->text().length() < 8) {
-        QMessageBox::warning(this, "Erreur de saisie", "Numéro de téléphone invalide.");
+        QMessageBox::warning(this, tr("Erreur de saisie"), tr("Numéro de téléphone invalide."));
         return false;
     }
 
@@ -65,7 +142,7 @@ bool MainWindow::validerControlesSaisieCours() {
     if (ui->lineEdit_cours_id->text().isEmpty() || ui->lineEdit_cours_titre->text().isEmpty() ||
         ui->lineEdit_cours_duree->text().isEmpty() || ui->lineEdit_cours_prix->text().isEmpty() ||
         ui->lineEdit_cours_id_formateur->text().isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez remplir tous les champs du cours.");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Veuillez remplir tous les champs du cours."));
         return false;
     }
 
@@ -74,12 +151,12 @@ bool MainWindow::validerControlesSaisieCours() {
     double prix = ui->lineEdit_cours_prix->text().toDouble(&okPrix);
 
     if (!okDuree || duree <= 0) {
-        QMessageBox::warning(this, "Erreur de saisie", "La durée doit être un nombre entier positif.");
+        QMessageBox::warning(this, tr("Erreur de saisie"), tr("La durée doit être un nombre entier positif."));
         return false;
     }
 
     if (!okPrix || prix <= 0) {
-        QMessageBox::warning(this, "Erreur de saisie", "Le prix doit être un nombre positif.");
+        QMessageBox::warning(this, tr("Erreur de saisie"), tr("Le prix doit être un nombre positif."));
         return false;
     }
 
@@ -109,7 +186,7 @@ void MainWindow::on_btn_ajouter_formateur_clicked() {
     QString email = ui->lineEdit_email->text();
 
     if (!formateurTmp.verifierEmailUnique(email)) {
-        QMessageBox::warning(this, "Avertissement", "Cette adresse email est déjà utilisée par un autre formateur !");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Cette adresse email est déjà utilisée par un autre formateur !"));
         return;
     }
 
@@ -123,10 +200,10 @@ void MainWindow::on_btn_ajouter_formateur_clicked() {
     Formateur f(id, nom, prenom, spec, email, phone, tarif);
 
     if (f.ajouter()) {
-        QMessageBox::information(this, "Succès", "Formateur ajouté avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Formateur ajouté avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout (Vérifiez l'ID unique).");
+        QMessageBox::critical(this, tr("Erreur"), tr("Échec de l'ajout (Vérifiez l'ID unique)."));
     }
 }
 
@@ -144,25 +221,25 @@ void MainWindow::on_btn_modifier_formateur_clicked() {
     Formateur f(id, nom, prenom, spec, email, phone, tarif);
 
     if (f.modifier(id)) {
-        QMessageBox::information(this, "Succès", "Formateur modifié avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Formateur modifié avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification.");
+        QMessageBox::critical(this, tr("Erreur"), tr("Échec de la modification."));
     }
 }
 
 void MainWindow::on_btn_supprimer_formateur_clicked() {
     if (ui->lineEdit_id_suppr->text().isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez saisir l'ID du formateur à supprimer.");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Veuillez saisir l'ID du formateur à supprimer."));
         return;
     }
 
     int id = ui->lineEdit_id_suppr->text().toInt();
     if (formateurTmp.supprimer(id)) {
-        QMessageBox::information(this, "Succès", "Formateur supprimé avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Formateur supprimé avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Impossible de supprimer cet identifiant.");
+        QMessageBox::critical(this, tr("Erreur"), tr("Impossible de supprimer cet identifiant."));
     }
 }
 
@@ -186,26 +263,26 @@ void MainWindow::on_btn_calculer_paie_clicked() {
         id = ui->tableView_formateur->model()->data(ui->tableView_formateur->model()->index(row, 0)).toInt();
     }
     else {
-        QMessageBox::warning(this, "Sélection requise", "Veuillez d'abord saisir un ID ou sélectionner une ligne dans le tableau.");
+        QMessageBox::warning(this, tr("Sélection requise"), tr("Veuillez d'abord saisir un ID ou sélectionner une ligne dans le tableau."));
         return;
     }
 
     bool ok;
-    int heures = QInputDialog::getInt(this, "Calcul de Paie",
-                                      "Entrez le nombre d'heures effectuées ce mois-ci :",
+    int heures = QInputDialog::getInt(this, tr("Calcul de Paie"),
+                                      tr("Entrez le nombre d'heures effectuées ce mois-ci :"),
                                       160, 1, 300, 1, &ok);
 
     if (ok) {
         double paieTotale = formateurTmp.calculerPaieEstimee(id, heures);
 
         if (paieTotale > 0) {
-            QMessageBox::information(this, "Fiche de Paie Estimée",
-                                     QString("<b>Formateur ID :</b> %1<br>"
-                                             "<b>Heures travaillées :</b> %2 h<br>"
-                                             "<b>Montant Total à payer :</b> <font color='green'><b>%3 DT</b></font>")
+            QMessageBox::information(this, tr("Fiche de Paie Estimée"),
+                                     QString("<b>" + tr("Formateur ID :") + "</b> %1<br>"
+                                                                            "<b>" + tr("Heures travaillées :") + "</b> %2 h<br>"
+                                                                            "<b>" + tr("Montant Total à payer :") + "</b> <font color='green'><b>%3 DT</b></font>")
                                          .arg(id).arg(heures).arg(paieTotale));
         } else {
-            QMessageBox::critical(this, "Erreur", "Impossible de calculer la paie (Formateur introuvable ou tarif non défini).");
+            QMessageBox::critical(this, tr("Erreur"), tr("Impossible de calculer la paie (Formateur introuvable ou tarif non défini)."));
         }
     }
 }
@@ -220,7 +297,7 @@ void MainWindow::on_btn_stat_formateur_clicked() {
 
     QChart *chart = new QChart();
     chart->addSeries(series);
-    chart->setTitle("Répartition des Formateurs par Spécialité");
+    chart->setTitle(tr("Répartition des Formateurs par Spécialité"));
     chart->setAnimationOptions(QChart::AllAnimations);
 
     QChartView *chartView = new QChartView(chart);
@@ -230,7 +307,7 @@ void MainWindow::on_btn_stat_formateur_clicked() {
 }
 
 void MainWindow::on_btn_pdf_formateur_clicked() {
-    QString fileName = QFileDialog::getSaveFileName(this, "Exporter en PDF", "", "*.pdf");
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Exporter en PDF"), "", "*.pdf");
     if (fileName.isEmpty()) return;
 
     QPrinter printer(QPrinter::PrinterResolution);
@@ -241,7 +318,7 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     painter.setFont(QFont("Helvetica", 12));
 
     painter.drawText(100, 100, "===============================================");
-    painter.drawText(100, 130, "         FICHE DES FORMATEURS REGISTRES        ");
+    painter.drawText(100, 130, "         FICHE DES FORMATEURS ENREGISTRES       ");
     painter.drawText(100, 160, "===============================================");
 
     QSqlQueryModel *model = formateurTmp.afficher();
@@ -258,11 +335,10 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     }
 
     painter.end();
-    QMessageBox::information(this, "PDF", "Document PDF généré avec succès !");
+    QMessageBox::information(this, tr("PDF"), tr("Document PDF généré avec succès !"));
 }
 
 void MainWindow::on_btn_qr_formateur_clicked() {
-    // 1. Récupération des données du formulaire ou de la ligne sélectionnée
     QString id = ui->lineEdit_id->text();
     QString nom = ui->lineEdit_nom->text();
     QString prenom = ui->lineEdit_prenom->text();
@@ -271,11 +347,10 @@ void MainWindow::on_btn_qr_formateur_clicked() {
     QString spec = ui->combo_spec->currentText();
 
     if (nom.isEmpty() || prenom.isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez sélectionner ou remplir les données d'un formateur.");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Veuillez sélectionner ou remplir les données d'un formateur."));
         return;
     }
 
-    // 2. Formatage des données au format vCard 3.0 (Carte de visite standard)
     QString vcardData = QString(
                             "BEGIN:VCARD\n"
                             "VERSION:3.0\n"
@@ -287,11 +362,9 @@ void MainWindow::on_btn_qr_formateur_clicked() {
                             "END:VCARD"
                             ).arg(nom, prenom, email, phone, spec);
 
-    // 3. Construction de l'URL pour l'API QR Code
     QString apiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="
                      + QUrl::toPercentEncoding(vcardData);
 
-    // 4. Téléchargement de l'image QR Code via HTTP
     QNetworkAccessManager *manager = new QNetworkAccessManager(this);
     QNetworkRequest request((QUrl(apiUrl)));
 
@@ -301,9 +374,8 @@ void MainWindow::on_btn_qr_formateur_clicked() {
             QPixmap pixmap;
             pixmap.loadFromData(data);
 
-            // 5. Affichage dans une fenêtre dédiée (Badge)
             QDialog *dialog = new QDialog(this);
-            dialog->setWindowTitle("Badge QR Code - " + prenom + " " + nom);
+            dialog->setWindowTitle(tr("Badge QR Code - ") + prenom + " " + nom);
             dialog->setFixedSize(300, 350);
 
             QVBoxLayout *layout = new QVBoxLayout(dialog);
@@ -311,14 +383,14 @@ void MainWindow::on_btn_qr_formateur_clicked() {
             imgLabel->setPixmap(pixmap);
             imgLabel->setAlignment(Qt::AlignCenter);
 
-            QLabel *infoLabel = new QLabel(QString("<b>%1 %2</b><br>Scannez pour enregistrer le contact").arg(prenom, nom), dialog);
+            QLabel *infoLabel = new QLabel(QString("<b>%1 %2</b><br>" + tr("Scannez pour enregistrer le contact")).arg(prenom, nom), dialog);
             infoLabel->setAlignment(Qt::AlignCenter);
 
             layout->addWidget(imgLabel);
             layout->addWidget(infoLabel);
             dialog->exec();
         } else {
-            QMessageBox::critical(this, "Erreur", "Impossible de générer le QR Code (Vérifiez votre connexion internet).");
+            QMessageBox::critical(this, tr("Erreur"), tr("Impossible de générer le QR Code (Vérifiez votre connexion internet)."));
         }
         reply->deleteLater();
         manager->deleteLater();
@@ -354,10 +426,10 @@ void MainWindow::on_lineEdit_cours_id_formateur_textChanged(const QString &arg1)
 
     if (coursTmp.verifierSurchargeFormateur(idFormateur, dureeSaisie, 100)) {
         ui->label_alerte_surcharge->setStyleSheet("color: red; font-weight: bold;");
-        ui->label_alerte_surcharge->setText("⚠️ Attention : Formateur proche de la surcharge (>100h) !");
+        ui->label_alerte_surcharge->setText(tr("⚠️ Attention : Formateur proche de la surcharge (>100h) !"));
     } else {
         ui->label_alerte_surcharge->setStyleSheet("color: green;");
-        ui->label_alerte_surcharge->setText("✓ Charge de travail normale.");
+        ui->label_alerte_surcharge->setText(tr("✓ Charge de travail normale."));
     }
 }
 
@@ -371,7 +443,7 @@ void MainWindow::on_btn_verifier_surcharge_clicked() {
     QString dureeStr = ui->lineEdit_cours_duree->text().trimmed();
 
     if (idStr.isEmpty() || dureeStr.isEmpty()) {
-        QMessageBox::warning(this, "Champs manquants", "Veuillez saisir l'ID Formateur et la Durée pour effectuer la vérification.");
+        QMessageBox::warning(this, tr("Champs manquants"), tr("Veuillez saisir l'ID Formateur et la Durée pour effectuer la vérification."));
         return;
     }
 
@@ -382,14 +454,14 @@ void MainWindow::on_btn_verifier_surcharge_clicked() {
 
     if (surcharge) {
         ui->label_alerte_surcharge->setStyleSheet("color: red; font-weight: bold;");
-        ui->label_alerte_surcharge->setText("⚠️ Attention : Seuil d'heures dépassé (>100h) !");
-        QMessageBox::warning(this, "Alerte Seuil Dépassé",
-                             QString("Le formateur %1 dépasse le seuil autorisé (100h) avec ce cours.").arg(idFormateur));
+        ui->label_alerte_surcharge->setText(tr("⚠️ Attention : Seuil d'heures dépassé (>100h) !"));
+        QMessageBox::warning(this, tr("Alerte Seuil Dépassé"),
+                             QString(tr("Le formateur %1 dépasse le seuil autorisé (100h) avec ce cours.")).arg(idFormateur));
     } else {
         ui->label_alerte_surcharge->setStyleSheet("color: green; font-weight: bold;");
-        ui->label_alerte_surcharge->setText("✓ Charge d'heures sous le seuil autorise.");
-        QMessageBox::information(this, "Vérification Réussie",
-                                 QString("Le formateur %1 respecte la limite de charge horaire.").arg(idFormateur));
+        ui->label_alerte_surcharge->setText(tr("✓ Charge d'heures sous le seuil autorisé."));
+        QMessageBox::information(this, tr("Vérification Réussie"),
+                                 QString(tr("Le formateur %1 respecte la limite de charge horaire.")).arg(idFormateur));
     }
 }
 
@@ -406,9 +478,8 @@ void MainWindow::on_btn_ajouter_cours_clicked() {
     if (coursTmp.verifierSurchargeFormateur(idFormateur, duree, 100)) {
         QMessageBox::StandardButton reponse = QMessageBox::warning(
             this,
-            "Alerte Surcharge Formateur",
-            "Attention : Ce formateur va dépasser le seuil conseillé (100h de cours).\n\n"
-            "Voulez-vous quand même lui assigner ce cours ?",
+            tr("Alerte Surcharge Formateur"),
+            tr("Attention : Ce formateur va dépasser le seuil conseillé (100h de cours).\n\nVoulez-vous quand même lui assigner ce cours ?"),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No
             );
@@ -421,10 +492,10 @@ void MainWindow::on_btn_ajouter_cours_clicked() {
     Cours c(id, titre, categorie, duree, prix, idFormateur);
 
     if (c.ajouter()) {
-        QMessageBox::information(this, "Succès", "Cours ajouté avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Cours ajouté avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout du cours.");
+        QMessageBox::critical(this, tr("Erreur"), tr("Échec de l'ajout du cours."));
     }
 }
 
@@ -441,25 +512,25 @@ void MainWindow::on_btn_modifier_cours_clicked() {
     Cours c(id, titre, categorie, duree, prix, idFormateur);
 
     if (c.modifier(id)) {
-        QMessageBox::information(this, "Succès", "Cours modifié avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Cours modifié avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification du cours.");
+        QMessageBox::critical(this, tr("Erreur"), tr("Échec de la modification du cours."));
     }
 }
 
 void MainWindow::on_btn_supprimer_cours_clicked() {
     if (ui->lineEdit_cours_id_suppr->text().isEmpty()) {
-        QMessageBox::warning(this, "Avertissement", "Veuillez saisir l'ID du cours à supprimer.");
+        QMessageBox::warning(this, tr("Avertissement"), tr("Veuillez saisir l'ID du cours à supprimer."));
         return;
     }
 
     int id = ui->lineEdit_cours_id_suppr->text().toInt();
     if (coursTmp.supprimer(id)) {
-        QMessageBox::information(this, "Succès", "Cours supprimé avec succès !");
+        QMessageBox::information(this, tr("Succès"), tr("Cours supprimé avec succès !"));
         rafraichirTables();
     } else {
-        QMessageBox::critical(this, "Erreur", "Impossible de supprimer ce cours.");
+        QMessageBox::critical(this, tr("Erreur"), tr("Impossible de supprimer ce cours."));
     }
 }
 
@@ -482,7 +553,7 @@ void MainWindow::on_btn_stat_cours_clicked() {
 
     QChart *chart = new QChart();
     chart->addSeries(series);
-    chart->setTitle("Répartition des Cours par Catégorie");
+    chart->setTitle(tr("Répartition des Cours par Catégorie"));
     chart->setAnimationOptions(QChart::AllAnimations);
 
     QChartView *chartView = new QChartView(chart);
@@ -492,7 +563,7 @@ void MainWindow::on_btn_stat_cours_clicked() {
 }
 
 void MainWindow::on_btn_pdf_cours_clicked() {
-    QString fileName = QFileDialog::getSaveFileName(this, "Exporter Cours en PDF", "", "*.pdf");
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Exporter Cours en PDF"), "", "*.pdf");
     if (fileName.isEmpty()) return;
 
     QPrinter printer(QPrinter::PrinterResolution);
@@ -503,7 +574,7 @@ void MainWindow::on_btn_pdf_cours_clicked() {
     painter.setFont(QFont("Helvetica", 12));
 
     painter.drawText(100, 100, "===============================================");
-    painter.drawText(100, 130, "              CATALOGUE DES COURS              ");
+    painter.drawText(100, 130, "               CATALOGUE DES COURS             ");
     painter.drawText(100, 160, "===============================================");
 
     QSqlQueryModel *model = coursTmp.afficher();
@@ -520,10 +591,12 @@ void MainWindow::on_btn_pdf_cours_clicked() {
     }
 
     painter.end();
-    QMessageBox::information(this, "PDF", "Catalogue des cours exporté en PDF avec succès !");
+    QMessageBox::information(this, tr("PDF"), tr("Catalogue des cours exporté en PDF avec succès !"));
 }
-void MainWindow::on_btn_toggle_theme_clicked()
-{
+
+// ---------------- GESTION DU THÈME SOMBRE ----------------
+
+void MainWindow::on_btn_toggle_theme_clicked() {
     static bool isDark = false;
     isDark = !isDark;
 
@@ -546,9 +619,9 @@ void MainWindow::on_btn_toggle_theme_clicked()
             "QHeaderView::section { background-color: #2d2d2d; color: #00b894; padding: 6px; font-weight: bold; border: none; }";
 
         this->setStyleSheet(darkStyle);
-        ui->btn_toggle_theme->setText("☀️ Mode Clair");
+        ui->btn_toggle_theme->setText("☀️ " + tr("Mode Clair"));
     } else {
         this->setStyleSheet("");
-        ui->btn_toggle_theme->setText("🌙 Mode Sombre");
+        ui->btn_toggle_theme->setText("🌙 " + tr("Mode Sombre"));
     }
 }
