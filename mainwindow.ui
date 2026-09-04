@@ -16,6 +16,13 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_main">
     <item>
+     <widget class="QPushButton" name="btn_toggle_theme">
+      <property name="text">
+       <string>🌙 Mode Sombre</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
        <number>0</number>

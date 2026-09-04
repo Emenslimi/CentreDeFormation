@@ -27,6 +27,8 @@ public:
     ~MainWindow();
 
 private slots:
+    void on_btn_toggle_theme_clicked();
+
     // Slots Formateurs
     void on_btn_ajouter_formateur_clicked();
     void on_btn_supprimer_formateur_clicked();

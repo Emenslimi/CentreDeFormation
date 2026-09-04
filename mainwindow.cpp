@@ -522,3 +522,33 @@ void MainWindow::on_btn_pdf_cours_clicked() {
     painter.end();
     QMessageBox::information(this, "PDF", "Catalogue des cours exporté en PDF avec succès !");
 }
+void MainWindow::on_btn_toggle_theme_clicked()
+{
+    static bool isDark = false;
+    isDark = !isDark;
+
+    if (isDark) {
+        // Déclaration du style Anthracite & Émeraude
+        QString darkStyle =
+            "QMainWindow { background-color: #121212; }"
+            "QWidget { background-color: #1e1e1e; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; font-size: 13px; }"
+            "QTabWidget::pane { border: 1px solid #2d2d2d; background-color: #1e1e1e; border-radius: 8px; }"
+            "QTabBar::tab { background: #2d2d2d; color: #a0a0a0; padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px; font-weight: bold; }"
+            "QTabBar::tab:selected { background: #00b894; color: #ffffff; }"
+            "QGroupBox { font-weight: bold; border: 1px solid #333333; border-radius: 8px; margin-top: 12px; padding-top: 12px; color: #00b894; }"
+            "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }"
+            "QLineEdit, QComboBox { background-color: #2b2b2b; border: 1px solid #3d3d3d; border-radius: 5px; padding: 6px; color: #ffffff; selection-background-color: #00b894; }"
+            "QLineEdit:focus, QComboBox:focus { border: 1px solid #00b894; }"
+            "QPushButton { background-color: #00b894; color: #ffffff; font-weight: bold; border-radius: 6px; padding: 8px 14px; border: none; }"
+            "QPushButton:hover { background-color: #55efc4; color: #000000; }"
+            "QPushButton:pressed { background-color: #00876c; }"
+            "QTableView { background-color: #232323; gridline-color: #333333; border-radius: 6px; selection-background-color: #00b894; selection-color: #ffffff; }"
+            "QHeaderView::section { background-color: #2d2d2d; color: #00b894; padding: 6px; font-weight: bold; border: none; }";
+
+        this->setStyleSheet(darkStyle);
+        ui->btn_toggle_theme->setText("☀️ Mode Clair");
+    } else {
+        this->setStyleSheet("");
+        ui->btn_toggle_theme->setText("🌙 Mode Sombre");
+    }
+}
