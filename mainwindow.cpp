@@ -78,12 +78,26 @@ bool MainWindow::validerControlesSaisieCours() {
 
 // ---------------- SLOTS FORMATEUR ----------------
 
+void MainWindow::on_tableView_formateur_clicked(const QModelIndex &index) {
+    int row = index.row();
+    QAbstractItemModel *model = ui->tableView_formateur->model();
+
+    ui->lineEdit_id->setText(model->data(model->index(row, 0)).toString());
+    ui->lineEdit_nom->setText(model->data(model->index(row, 1)).toString());
+    ui->lineEdit_prenom->setText(model->data(model->index(row, 2)).toString());
+    ui->combo_spec->setCurrentText(model->data(model->index(row, 3)).toString());
+    ui->lineEdit_email->setText(model->data(model->index(row, 4)).toString());
+    ui->lineEdit_phone->setText(model->data(model->index(row, 5)).toString());
+    ui->lineEdit_tarif->setText(model->data(model->index(row, 6)).toString());
+
+    ui->lineEdit_id_suppr->setText(model->data(model->index(row, 0)).toString());
+}
+
 void MainWindow::on_btn_ajouter_formateur_clicked() {
     if (!validerControlesSaisieFormateur()) return;
 
     QString email = ui->lineEdit_email->text();
 
-    // UTILISATION DU MÉTIER 5 : Vérification de l'unicité de l'email
     if (!formateurTmp.verifierEmailUnique(email)) {
         QMessageBox::warning(this, "Avertissement", "Cette adresse email est déjà utilisée par un autre formateur !");
         return;
@@ -151,20 +165,16 @@ void MainWindow::on_btn_rechercher_formateur_clicked() {
     ui->tableView_formateur->setModel(formateurTmp.rechercherEtTrier(critereRec, valeur, critereTri, ordre));
 }
 
-// UTILISATION DU MÉTIER 4 : Calcul de la paie estimée
 void MainWindow::on_btn_calculer_paie_clicked() {
     int id = -1;
 
-    // 1. Si l'ID est saisi dans le lineEdit_id
     if (!ui->lineEdit_id->text().isEmpty()) {
         id = ui->lineEdit_id->text().toInt();
     }
-    // 2. Sinon, on vérifie si une ligne est sélectionnée dans le tableView
     else if (ui->tableView_formateur->currentIndex().isValid()) {
         int row = ui->tableView_formateur->currentIndex().row();
         id = ui->tableView_formateur->model()->data(ui->tableView_formateur->model()->index(row, 0)).toInt();
     }
-    // 3. Si aucun des deux n'est disponible
     else {
         QMessageBox::warning(this, "Sélection requise", "Veuillez d'abord saisir un ID ou sélectionner une ligne dans le tableau.");
         return;
@@ -243,6 +253,70 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
 
 // ---------------- SLOTS COURS ----------------
 
+void MainWindow::on_tableView_cours_clicked(const QModelIndex &index) {
+    int row = index.row();
+    QAbstractItemModel *model = ui->tableView_cours->model();
+
+    ui->lineEdit_cours_id->setText(model->data(model->index(row, 0)).toString());
+    ui->lineEdit_cours_titre->setText(model->data(model->index(row, 1)).toString());
+    ui->combo_cours_cat->setCurrentText(model->data(model->index(row, 2)).toString());
+    ui->lineEdit_cours_duree->setText(model->data(model->index(row, 3)).toString());
+    ui->lineEdit_cours_prix->setText(model->data(model->index(row, 4)).toString());
+    ui->lineEdit_cours_id_formateur->setText(model->data(model->index(row, 5)).toString());
+
+    ui->lineEdit_cours_id_suppr->setText(model->data(model->index(row, 0)).toString());
+}
+
+void MainWindow::on_lineEdit_cours_id_formateur_textChanged(const QString &arg1) {
+    int idFormateur = arg1.toInt();
+    if (idFormateur <= 0) {
+        ui->label_alerte_surcharge->clear();
+        return;
+    }
+
+    int dureeSaisie = ui->lineEdit_cours_duree->text().toInt();
+
+    if (coursTmp.verifierSurchargeFormateur(idFormateur, dureeSaisie, 100)) {
+        ui->label_alerte_surcharge->setStyleSheet("color: red; font-weight: bold;");
+        ui->label_alerte_surcharge->setText("⚠️ Attention : Formateur proche de la surcharge (>100h) !");
+    } else {
+        ui->label_alerte_surcharge->setStyleSheet("color: green;");
+        ui->label_alerte_surcharge->setText("✓ Charge de travail normale.");
+    }
+}
+
+void MainWindow::on_lineEdit_cours_duree_textChanged(const QString &arg1) {
+    Q_UNUSED(arg1);
+    on_lineEdit_cours_id_formateur_textChanged(ui->lineEdit_cours_id_formateur->text());
+}
+
+void MainWindow::on_btn_verifier_surcharge_clicked() {
+    QString idStr = ui->lineEdit_cours_id_formateur->text().trimmed();
+    QString dureeStr = ui->lineEdit_cours_duree->text().trimmed();
+
+    if (idStr.isEmpty() || dureeStr.isEmpty()) {
+        QMessageBox::warning(this, "Champs manquants", "Veuillez saisir l'ID Formateur et la Durée pour effectuer la vérification.");
+        return;
+    }
+
+    int idFormateur = idStr.toInt();
+    int duree = dureeStr.toInt();
+
+    bool surcharge = coursTmp.verifierSurchargeFormateur(idFormateur, duree, 100);
+
+    if (surcharge) {
+        ui->label_alerte_surcharge->setStyleSheet("color: red; font-weight: bold;");
+        ui->label_alerte_surcharge->setText("⚠️ Attention : Seuil d'heures dépassé (>100h) !");
+        QMessageBox::warning(this, "Alerte Seuil Dépassé",
+                             QString("Le formateur dépasse le seuil autorisé (100h) avec ce cours.").arg(idFormateur));
+    } else {
+        ui->label_alerte_surcharge->setStyleSheet("color: green; font-weight: bold;");
+        ui->label_alerte_surcharge->setText("✓ Charge d'heures sous le seuil autorise.");
+        QMessageBox::information(this, "Vérification Réussie",
+                                 QString("Le formateur respecte la limite de charge horaire.").arg(idFormateur));
+    }
+}
+
 void MainWindow::on_btn_ajouter_cours_clicked() {
     if (!validerControlesSaisieCours()) return;
 
@@ -252,6 +326,21 @@ void MainWindow::on_btn_ajouter_cours_clicked() {
     int duree = ui->lineEdit_cours_duree->text().toInt();
     double prix = ui->lineEdit_cours_prix->text().toDouble();
     int idFormateur = ui->lineEdit_cours_id_formateur->text().toInt();
+
+    if (coursTmp.verifierSurchargeFormateur(idFormateur, duree, 100)) {
+        QMessageBox::StandardButton reponse = QMessageBox::warning(
+            this,
+            "Alerte Surcharge Formateur",
+            "Attention : Ce formateur va dépasser le seuil conseillé (100h de cours).\n\n"
+            "Voulez-vous quand même lui assigner ce cours ?",
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+            );
+
+        if (reponse == QMessageBox::No) {
+            return;
+        }
+    }
 
     Cours c(id, titre, categorie, duree, prix, idFormateur);
 
@@ -338,7 +427,7 @@ void MainWindow::on_btn_pdf_cours_clicked() {
     painter.setFont(QFont("Helvetica", 12));
 
     painter.drawText(100, 100, "===============================================");
-    painter.drawText(100, 130, "            CATALOGUE DES COURS                ");
+    painter.drawText(100, 130, "              CATALOGUE DES COURS              ");
     painter.drawText(100, 160, "===============================================");
 
     QSqlQueryModel *model = coursTmp.afficher();

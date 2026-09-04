@@ -29,10 +29,15 @@ public:
     QMap<QString, double> obtenirPrixMoyenParCategorie();
     QMap<QString, int> obtenirStatistiquesCategorie();
     bool exporterPDF(QString filePath);
+
     // Calcule la marge estimée avec des coefficients d'ajustement
     double simulerMargeAjustee(double prixBase, int duree, double tarifFormateur, double coefInfrastructures);
+
     // Vérifie la compatibilité entre la spécialité et la catégorie
     bool verifierCompatibilite(QString specialiteFormateur, QString categorieCours);
+
+    // Vérifie si l'affectation d'un cours entraîne la surcharge du formateur (quota maximum d'heures dépassé)
+    bool verifierSurchargeFormateur(int idFormateur, int nouvelleDuree, int seuilMaxHeures = 100);
 };
 
 #endif // COURS_H

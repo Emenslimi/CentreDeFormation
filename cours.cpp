@@ -1,6 +1,12 @@
 #include "cours.h"
+#include <QVariant>
 
-Cours::Cours() { id = 0; dureeHeures = 0; prix = 0.0; idFormateur = 0; }
+Cours::Cours() {
+    id = 0;
+    dureeHeures = 0;
+    prix = 0.0;
+    idFormateur = 0;
+}
 
 Cours::Cours(int id, QString titre, QString categorie, int dureeHeures, double prix, int idFormateur) {
     this->id = id;
@@ -93,4 +99,29 @@ QMap<QString, int> Cours::obtenirStatistiquesCategorie() {
         stats[query.value(0).toString()] = query.value(1).toInt();
     }
     return stats;
+}
+
+double Cours::simulerMargeAjustee(double prixBase, int duree, double tarifFormateur, double coefInfrastructures) {
+    double coutFormateur = duree * tarifFormateur;
+    double coutInfrastructure = duree * coefInfrastructures;
+    return prixBase - (coutFormateur + coutInfrastructure);
+}
+
+bool Cours::verifierCompatibilite(QString specialiteFormateur, QString categorieCours) {
+    return (specialiteFormateur.trimmed().toLower() == categorieCours.trimmed().toLower());
+}
+
+// Métier : Vérification de la surcharge du formateur selon son quota d'heures
+bool Cours::verifierSurchargeFormateur(int idFormateur, int nouvelleDuree, int seuilMaxHeures) {
+    QSqlQuery query;
+    query.prepare("SELECT SUM(DUREE_HEURES) FROM COURS WHERE ID_FORMATEUR = :id");
+    query.bindValue(":id", idFormateur);
+
+    if (query.exec() && query.next()) {
+        int heuresActuelles = query.value(0).toInt();
+        if ((heuresActuelles + nouvelleDuree) > seuilMaxHeures) {
+            return true; // Risque de surcharge détecté !
+        }
+    }
+    return false;
 }
