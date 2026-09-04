@@ -10,8 +10,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Chargement des modules Qt6 indispensables pour votre projet
-find_package(Qt6 REQUIRED COMPONENTS Widgets Sql Charts PrintSupport)
+# Chargement des modules Qt6 indispensables (Inclusion de Network pour QR Code & Mail)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Sql Charts PrintSupport Network)
 
 # Liste de tous vos fichiers C++ et de l'interface graphique .ui
 set(PROJECT_SOURCES
@@ -36,6 +36,7 @@ target_link_libraries(appCentreDeFormation PRIVATE
     Qt6::Sql
     Qt6::Charts
     Qt6::PrintSupport
+    Qt6::Network
 )
 
 set_target_properties(appCentreDeFormation PROPERTIES

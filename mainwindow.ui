@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_formateurs">
        <attribute name="title">
@@ -258,6 +258,13 @@
              <widget class="QPushButton" name="btn_calculer_paie">
               <property name="text">
                <string>Calculer Paie Estimée</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_qr_formateur">
+              <property name="text">
+               <string>Générer Badge QR Code</string>
               </property>
              </widget>
             </item>

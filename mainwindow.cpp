@@ -13,6 +13,16 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 
+// En-têtes requis pour la génération du QR Code via Network API
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QUrlQuery>
+#include <QUrl>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -251,6 +261,72 @@ void MainWindow::on_btn_pdf_formateur_clicked() {
     QMessageBox::information(this, "PDF", "Document PDF généré avec succès !");
 }
 
+void MainWindow::on_btn_qr_formateur_clicked() {
+    // 1. Récupération des données du formulaire ou de la ligne sélectionnée
+    QString id = ui->lineEdit_id->text();
+    QString nom = ui->lineEdit_nom->text();
+    QString prenom = ui->lineEdit_prenom->text();
+    QString email = ui->lineEdit_email->text();
+    QString phone = ui->lineEdit_phone->text();
+    QString spec = ui->combo_spec->currentText();
+
+    if (nom.isEmpty() || prenom.isEmpty()) {
+        QMessageBox::warning(this, "Avertissement", "Veuillez sélectionner ou remplir les données d'un formateur.");
+        return;
+    }
+
+    // 2. Formatage des données au format vCard 3.0 (Carte de visite standard)
+    QString vcardData = QString(
+                            "BEGIN:VCARD\n"
+                            "VERSION:3.0\n"
+                            "N:%1;%2;;;\n"
+                            "FN:%2 %1\n"
+                            "EMAIL:%3\n"
+                            "TEL:%4\n"
+                            "TITLE:Formateur %5\n"
+                            "END:VCARD"
+                            ).arg(nom, prenom, email, phone, spec);
+
+    // 3. Construction de l'URL pour l'API QR Code
+    QString apiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="
+                     + QUrl::toPercentEncoding(vcardData);
+
+    // 4. Téléchargement de l'image QR Code via HTTP
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QNetworkRequest request((QUrl(apiUrl)));
+
+    connect(manager, &QNetworkAccessManager::finished, this, [this, nom, prenom, manager](QNetworkReply *reply) {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+            QPixmap pixmap;
+            pixmap.loadFromData(data);
+
+            // 5. Affichage dans une fenêtre dédiée (Badge)
+            QDialog *dialog = new QDialog(this);
+            dialog->setWindowTitle("Badge QR Code - " + prenom + " " + nom);
+            dialog->setFixedSize(300, 350);
+
+            QVBoxLayout *layout = new QVBoxLayout(dialog);
+            QLabel *imgLabel = new QLabel(dialog);
+            imgLabel->setPixmap(pixmap);
+            imgLabel->setAlignment(Qt::AlignCenter);
+
+            QLabel *infoLabel = new QLabel(QString("<b>%1 %2</b><br>Scannez pour enregistrer le contact").arg(prenom, nom), dialog);
+            infoLabel->setAlignment(Qt::AlignCenter);
+
+            layout->addWidget(imgLabel);
+            layout->addWidget(infoLabel);
+            dialog->exec();
+        } else {
+            QMessageBox::critical(this, "Erreur", "Impossible de générer le QR Code (Vérifiez votre connexion internet).");
+        }
+        reply->deleteLater();
+        manager->deleteLater();
+    });
+
+    manager->get(request);
+}
+
 // ---------------- SLOTS COURS ----------------
 
 void MainWindow::on_tableView_cours_clicked(const QModelIndex &index) {
@@ -308,12 +384,12 @@ void MainWindow::on_btn_verifier_surcharge_clicked() {
         ui->label_alerte_surcharge->setStyleSheet("color: red; font-weight: bold;");
         ui->label_alerte_surcharge->setText("⚠️ Attention : Seuil d'heures dépassé (>100h) !");
         QMessageBox::warning(this, "Alerte Seuil Dépassé",
-                             QString("Le formateur dépasse le seuil autorisé (100h) avec ce cours.").arg(idFormateur));
+                             QString("Le formateur %1 dépasse le seuil autorisé (100h) avec ce cours.").arg(idFormateur));
     } else {
         ui->label_alerte_surcharge->setStyleSheet("color: green; font-weight: bold;");
         ui->label_alerte_surcharge->setText("✓ Charge d'heures sous le seuil autorise.");
         QMessageBox::information(this, "Vérification Réussie",
-                                 QString("Le formateur respecte la limite de charge horaire.").arg(idFormateur));
+                                 QString("Le formateur %1 respecte la limite de charge horaire.").arg(idFormateur));
     }
 }
 

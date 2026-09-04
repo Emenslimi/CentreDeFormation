@@ -36,6 +36,7 @@ private slots:
     void on_btn_pdf_formateur_clicked();
     void on_btn_calculer_paie_clicked();
     void on_tableView_formateur_clicked(const QModelIndex &index);
+    void on_btn_qr_formateur_clicked();
 
     // Slots Cours
     void on_btn_ajouter_cours_clicked();
@@ -44,7 +45,7 @@ private slots:
     void on_btn_rechercher_cours_clicked();
     void on_btn_stat_cours_clicked();
     void on_btn_pdf_cours_clicked();
-    void on_btn_verifier_surcharge_clicked(); // <-- Slot du bouton ajouté ici
+    void on_btn_verifier_surcharge_clicked();
     void on_lineEdit_cours_id_formateur_textChanged(const QString &arg1);
     void on_lineEdit_cours_duree_textChanged(const QString &arg1);
     void on_tableView_cours_clicked(const QModelIndex &index);
